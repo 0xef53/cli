@@ -63,17 +63,27 @@ type Generic interface {
 
 // GenericFlag is the flag type for types implementing Generic
 type GenericFlag struct {
-	Name   string
-	Value  Generic
-	Usage  string
-	EnvVar string
+	Name        string
+	Value       Generic
+	Usage       string
+	EnvVar      string
+	PlaceHolder string
 }
 
 // String returns the string representation of the generic flag to display the
 // help text to the user (uses the String() method of the generic flag to show
 // the value)
 func (f GenericFlag) String() string {
-	return withEnvHint(f.EnvVar, fmt.Sprintf("%s%s \"%v\"\t%v", prefixFor(f.Name), f.Name, f.Value, f.Usage))
+	var value string
+
+	switch {
+	case len(f.PlaceHolder) > 0:
+		value = strings.TrimSpace(f.PlaceHolder)
+	default:
+		value = fmt.Sprintf("\"%v\"", f.Value)
+	}
+
+	return withEnvHint(f.EnvVar, fmt.Sprintf("%s %v\t%v", prefixedNames(f.Name), value, f.Usage))
 }
 
 // Apply takes the flagset and calls Set on the generic flag with the value
@@ -312,24 +322,27 @@ func (f BoolTFlag) getName() string {
 
 // StringFlag represents a flag that takes as string value
 type StringFlag struct {
-	Name   string
-	Value  string
-	Usage  string
-	EnvVar string
+	Name        string
+	Value       string
+	Usage       string
+	EnvVar      string
+	PlaceHolder string
 }
 
 // String returns the usage
 func (f StringFlag) String() string {
-	var fmtString string
-	fmtString = "%s %v\t%v"
+	var value string
 
-	if len(f.Value) > 0 {
-		fmtString = "%s \"%v\"\t%v"
-	} else {
-		fmtString = "%s %v\t%v"
+	switch {
+	case len(f.PlaceHolder) > 0:
+		value = strings.TrimSpace(f.PlaceHolder)
+	case len(f.Value) > 0:
+		value = "\"" + f.Value + "\""
+	default:
+		value = "STRING"
 	}
 
-	return withEnvHint(f.EnvVar, fmt.Sprintf(fmtString, prefixedNames(f.Name), f.Value, f.Usage))
+	return withEnvHint(f.EnvVar, fmt.Sprintf("%s %v\t%v", prefixedNames(f.Name), value, f.Usage))
 }
 
 // Apply populates the flag given the flag set and environment
@@ -356,15 +369,27 @@ func (f StringFlag) getName() string {
 // IntFlag is a flag that takes an integer
 // Errors if the value provided cannot be parsed
 type IntFlag struct {
-	Name   string
-	Value  int
-	Usage  string
-	EnvVar string
+	Name        string
+	Value       int
+	Usage       string
+	EnvVar      string
+	PlaceHolder string
 }
 
 // String returns the usage
 func (f IntFlag) String() string {
-	return withEnvHint(f.EnvVar, fmt.Sprintf("%s \"%v\"\t%v", prefixedNames(f.Name), f.Value, f.Usage))
+	var value string
+
+	switch {
+	case len(f.PlaceHolder) > 0:
+		value = strings.TrimSpace(f.PlaceHolder)
+	case f.Value != 0:
+		value = strconv.Itoa(f.Value)
+	default:
+		value = "INT"
+	}
+
+	return withEnvHint(f.EnvVar, fmt.Sprintf("%s %v\t%v", prefixedNames(f.Name), value, f.Usage))
 }
 
 // Apply populates the flag given the flag set and environment
